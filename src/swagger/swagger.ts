@@ -10,12 +10,14 @@ const options: swaggerJsdoc.Options = {
       description: "REST API for ListingView360",
     },
 
-    servers: [
-      {
-        url: "http://localhost:3000/api/v1",
-        description: "Local development server",
-      },
-    ],
+ servers: [
+  {
+    url:
+      process.env.API_BASE_URL ||
+      "http://localhost:3000/api/v1",
+    description: "API server",
+  },
+],
 
     components: {
       schemas: {
