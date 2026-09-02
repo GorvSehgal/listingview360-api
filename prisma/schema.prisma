@@ -1,0 +1,60 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ListingType {
+  sale
+  rent
+}
+
+model Property {
+  id         Int    @id @default(autoincrement())
+  title      String
+  address    String
+  city       String
+  province   String
+  postalCode String
+
+  listingType ListingType
+  price       Int
+
+  bedrooms     Int
+  bathrooms    Float
+  propertyType String
+  yearBuilt    Int?
+
+  description String
+
+  realtorName      String
+  realtorBrokerage String?
+
+  images    PropertyImage[]
+  panoramas Panorama[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model PropertyImage {
+  id        Int    @id @default(autoincrement())
+  url       String
+  sortOrder Int    @default(0)
+
+  propertyId Int
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+}
+
+model Panorama {
+  id        Int    @id @default(autoincrement())
+  name      String
+  url       String
+  sortOrder Int    @default(0)
+
+  propertyId Int
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+}
