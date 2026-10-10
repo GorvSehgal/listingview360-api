@@ -1,80 +1,9 @@
 import type { Property ,CreatePropertyInput, UpdatePropertyInput} from "../types/property.js";
 import { prisma } from "../config/database.js";
-const properties: Property[] = [
-  {
-  id: 1,
-  title: "Modern Detached Home",
-  address: "123 Maple Street",
-  city: "Toronto",
-  province: "ON",
-  postalCode: "M1A 1A1",
+export type PropertyActor = { id: number; role: "admin" | "realtor" };
 
-  listingType: "sale",
-  price: 899000,
-
-  bedrooms: 4,
-  bathrooms: 3,
-  propertyType: "Detached",
-  yearBuilt: 2020,
-
-  description: "Modern detached home with spacious living areas.",
-
-  realtorName: "John Smith",
-  realtorBrokerage: "ABC Realty",
-
-  images: [
-    "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=1400&q=80",
-    "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1400&q=80",
-    "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1400&q=80",
-  ],
-
-  panoramas: [
-    {
-      name: "Living Room",
-      url: "living-room-360.jpg",
-    },
-    {
-      name: "Kitchen",
-      url: "kitchen-360.jpg",
-    },
-  ],
-},
-
-  {
-    id: 2,
-    title: "Downtown Condo for Rent",
-    address: "500 King Street",
-    city: "Toronto",
-    province: "ON",
-    postalCode: "M5V 1L9",
-
-    listingType: "rent",
-    price: 2800,
-
-    bedrooms: 2,
-    bathrooms: 2,
-    propertyType: "Condo",
-    yearBuilt: 2022,
-
-    description: "Modern downtown condo close to transit and restaurants.",
-
-    realtorName: "Sarah Lee",
-    realtorBrokerage: "City Realty",
-
-    images:[
-  "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1400&q=80",
-  "https://images.unsplash.com/photo-1493809842364-78817add7ffb?auto=format&fit=crop&w=1400&q=80",
-  "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1400&q=80",
-],
-
-    panoramas: [
-      {
-        name: "Living Room",
-        url: "condo-living-room-360.jpg",
-      },
-    ],
-  },
-];
+const permittedPropertyWhere = (id: number, actor: PropertyActor) =>
+  actor.role === "admin" ? { id } : { id, ownerId: actor.id };
 
 export const getProperties = async (): Promise<Property[]> => {
   const dbProperties = await prisma.property.findMany({
@@ -152,10 +81,12 @@ export const getPropertyById = async (
   };
 };
 export const createProperty = async (
-  data: CreatePropertyInput
+  data: CreatePropertyInput,
+  ownerId: number
 ): Promise<Property> => {
   const createdProperty = await prisma.property.create({
     data: {
+      ownerId,
       title: data.title,
       address: data.address,
       city: data.city,
@@ -218,10 +149,11 @@ export const createProperty = async (
 };
 export const updateProperty = async (
   id: number,
-  data: UpdatePropertyInput
+  data: UpdatePropertyInput,
+  actor: PropertyActor
 ): Promise<Property | undefined> => {
-  const existingProperty = await prisma.property.findUnique({
-    where: { id },
+  const existingProperty = await prisma.property.findFirst({
+    where: permittedPropertyWhere(id, actor),
   });
 
   if (!existingProperty) {
@@ -229,7 +161,7 @@ export const updateProperty = async (
   }
 
   const updatedProperty = await prisma.property.update({
-    where: { id },
+    where: permittedPropertyWhere(id, actor),
 
     data: {
       title: data.title,
@@ -300,7 +232,8 @@ export const updateProperty = async (
 };
 
 export const deleteProperty = async (
-  id: number
+  id: number,
+  actor: PropertyActor
 ): Promise<boolean> => {
   const existingProperty = await prisma.property.findUnique({
     where: { id },
@@ -311,7 +244,7 @@ export const deleteProperty = async (
   }
 
   await prisma.property.delete({
-    where: { id },
+    where: permittedPropertyWhere(id, actor),
   });
 
   return true;
