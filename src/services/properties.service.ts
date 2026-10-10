@@ -235,8 +235,8 @@ export const deleteProperty = async (
   id: number,
   actor: PropertyActor
 ): Promise<boolean> => {
-  const existingProperty = await prisma.property.findUnique({
-    where: { id },
+  const existingProperty = await prisma.property.findFirst({
+    where: permittedPropertyWhere(id, actor),
   });
 
   if (!existingProperty) {
