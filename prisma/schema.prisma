@@ -12,6 +12,23 @@ enum ListingType {
   rent
 }
 
+enum UserRole {
+  admin
+  realtor
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  passwordHash String
+  role         UserRole @default(realtor)
+  active       Boolean  @default(true)
+  properties   Property[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model Property {
   id         Int    @id @default(autoincrement())
   title      String
@@ -33,11 +50,17 @@ model Property {
   realtorName      String
   realtorBrokerage String?
 
+  // Legacy demo listings have no owner; only admins may update/delete them.
+  ownerId Int?
+  owner   User? @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+
   images    PropertyImage[]
   panoramas Panorama[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([ownerId])
 }
 
 model PropertyImage {
