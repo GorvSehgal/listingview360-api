@@ -1,3 +1,4 @@
+import { requireAuth, requireRole } from "../middleware/auth.middleware.js";
 import { Router } from "express";
 import { getAllProperties ,getProperty, createProperty, updateProperty,deleteProperty} from "../controllers/property.controller.js";
 import { createPropertySchema, updatePropertySchema } from "../schemas/property.schema.js";
@@ -84,7 +85,7 @@ router.get("/:id", getProperty);
  *                 data:
  *                   $ref: '#/components/schemas/Property'
  * */
-router.post("/", validateBody(createPropertySchema),createProperty);
+router.post("/", requireAuth, requireRole("admin", "realtor"), validateBody(createPropertySchema), createProperty);
 /**
  * @openapi
  * /properties/{id}:
@@ -112,7 +113,7 @@ router.post("/", validateBody(createPropertySchema),createProperty);
  *       404:
  *         description: Property not found
  */
-// router.patch("/:id", updateProperty);
+
 /**
  * @openapi
  * /properties/{id}:
@@ -142,7 +143,7 @@ router.post("/", validateBody(createPropertySchema),createProperty);
  *       404:
  *         description: Property not found
  */
-router.patch("/:id",  validateBody(updatePropertySchema),updateProperty);
+router.patch("/:id", requireAuth, requireRole("admin", "realtor"), validateBody(updatePropertySchema), updateProperty);
 /**
  * @openapi
  * /properties/{id}:
@@ -164,5 +165,5 @@ router.patch("/:id",  validateBody(updatePropertySchema),updateProperty);
  *       404:
  *         description: Property not found
  */
-router.delete("/:id", deleteProperty);
+router.delete("/:id", requireAuth, requireRole("admin", "realtor"), deleteProperty);
 export default router;

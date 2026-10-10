@@ -9,8 +9,9 @@
     "build": "prisma generate && tsc",
     "seed": "tsx src/scripts/seed.ts",
     "start": "node dist/server.js",
-    "typecheck": "tsc --noEmit"
-
+    "typecheck": "tsc --noEmit",
+    "user:create": "tsx src/scripts/create-user.ts",
+    "test": "tsx --test src/services/auth.service.test.ts src/test/auth.integration.test.ts"
   },
   "keywords": [],
   "author": "",
