@@ -52,7 +52,7 @@ test("without Gemini key, creates a factual local template and never calls a pro
     assert.match(result.draft, /Modern Toronto Condo/);
     assert.match(result.draft, /2 bedrooms/);
     assert.match(result.draft, /Balcony, Indoor parking/);
-    assert.match(result.draft, /\\$650,000/);
+    assert.ok(result.draft.includes("$650,000"));
     assert.doesNotMatch(result.draft, /nearby schools|safe neighborhood|guaranteed returns/i);
   } finally {
     if (old !== undefined) process.env.GEMINI_API_KEY = old;
