@@ -15,6 +15,7 @@ test("realtors manage only their own property; admin controls legacy listings", 
   const { prisma } = await import("../config/database.js");
 
   const server = app.listen(0);
+  await new Promise<void>((resolve) => server.once("listening", resolve));
   const address = server.address();
   assert.ok(address && typeof address !== "string");
   const base = `http://127.0.0.1:${address.port}/api/v1`;
@@ -52,7 +53,7 @@ test("realtors manage only their own property; admin controls legacy listings", 
     realtorName: "Integration Tester",
     images: ["https://example.com/house.jpg"],
     panoramas: [],
-  };
+  } as const;
 
   try {
     const passwordHash = await hashPassword(password);
