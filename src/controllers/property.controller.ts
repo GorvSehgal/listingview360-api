@@ -19,6 +19,9 @@ export const getProperty = async (
   res: Response
 ) => {
   const id = Number(req.params.id);
+  if (!Number.isSafeInteger(id) || id < 1) {
+    return res.status(400).json({ success: false, message: "Invalid property ID" });
+  }
 
   const property = await getPropertyById(id);
 
@@ -38,7 +41,7 @@ export const createProperty = async (
   req: Request<{}, {}, CreatePropertyInput>,
   res: Response
 ) => {
-  const newProperty = await createPropertyService(req.body);
+  const newProperty = await createPropertyService(req.body, req.authUser!.id);
 
   return res.status(201).json({
     success: true,
@@ -51,7 +54,7 @@ export const updateProperty = async (
 ) => {
   const id = Number(req.params.id);
 
-  const updatedProperty = await updatePropertyService(id, req.body);
+  const updatedProperty = await updatePropertyService(id, req.body, req.authUser!);
 
   if (!updatedProperty) {
     return res.status(404).json({
