@@ -6,6 +6,7 @@ import swaggerUi from "swagger-ui-express";
 import { swaggerSpec } from "./swagger/swagger.js";
 import propertyRouter from "./routes/property.routes.js";
 import authRouter from "./routes/auth.routes.js";
+import aiRouter from "./routes/ai.routes.js";
 
 const app = express();
 app.disable("x-powered-by");
@@ -31,6 +32,7 @@ app.use(express.json({ limit: "256kb" }));
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use("/api/v1/health", healthRouter);
 app.use("/api/v1/auth", authRouter);
+app.use("/api/v1/ai", aiRouter);
 app.use("/api/v1/properties", propertyRouter);
 
 // Do not return internals, SQL errors, or stack traces to API consumers.
