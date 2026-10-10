@@ -1,13 +1,21 @@
 import { createHmac, randomBytes, scrypt as scryptCallback, timingSafeEqual } from "node:crypto";
-import { promisify } from "node:util";
-
-const scrypt = promisify(scryptCallback);
 const ACCESS_TOKEN_SECONDS = 60 * 60;
 const ISSUER = "listingview360";
 const AUDIENCE = "listingview360-api";
 const SCRYPT_N = 16384;
 const SCRYPT_R = 8;
 const SCRYPT_P = 1;
+
+function derivePassword(password: string, salt: Buffer): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    scryptCallback(password, salt, 64, {
+      N: SCRYPT_N, r: SCRYPT_R, p: SCRYPT_P, maxmem: 64 * 1024 * 1024,
+    }, (error, derived) => {
+      if (error) reject(error);
+      else resolve(derived);
+    });
+  });
+}
 
 function jwtSecret(): string {
   const secret = process.env.JWT_SECRET;
@@ -22,9 +30,7 @@ export async function hashPassword(password: string): Promise<string> {
     throw new Error("Password must be at least 12 characters and at most 128 bytes");
   }
   const salt = randomBytes(32);
-  const derived = (await scrypt(password, salt, 64, {
-    N: SCRYPT_N, r: SCRYPT_R, p: SCRYPT_P, maxmem: 64 * 1024 * 1024,
-  })) as Buffer;
+  const derived = await derivePassword(password, salt);
   return `scrypt$${SCRYPT_N}$${SCRYPT_R}$${SCRYPT_P}$${salt.toString("base64url")}$${derived.toString("base64url")}`;
 }
 
@@ -40,9 +46,7 @@ export async function verifyPassword(password: string, stored: string): Promise<
   const salt = Buffer.from(parts[4], "base64url");
   const expected = Buffer.from(parts[5], "base64url");
   if (salt.length !== 32 || expected.length !== 64 || Buffer.byteLength(password, "utf8") > 128) return false;
-  const actual = (await scrypt(password, salt, 64, {
-    N: SCRYPT_N, r: SCRYPT_R, p: SCRYPT_P, maxmem: 64 * 1024 * 1024,
-  })) as Buffer;
+  const actual = await derivePassword(password, salt);
   return timingSafeEqual(actual, expected);
 }
 
