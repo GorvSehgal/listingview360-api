@@ -33,18 +33,27 @@ test("draft generation sends server-side API key and returns reviewable text", a
     const result = await generateDescription(input, mockFetch);
     assert.equal(called, true);
     assert.match(result.draft, /Two-bedroom Toronto/);
+    assert.equal(result.source, "ai");
   } finally {
     if (old === undefined) delete process.env.GEMINI_API_KEY;
     else process.env.GEMINI_API_KEY = old;
   }
 });
 
-test("draft generation fails closed without an API key", async () => {
+test("without Gemini key, creates a factual local template and never calls a provider", async () => {
   const old = process.env.GEMINI_API_KEY;
   delete process.env.GEMINI_API_KEY;
   try {
-    await assert.rejects(() => generateDescription(input), (error: unknown) =>
-      error instanceof AiDraftError && error.statusCode === 503);
+    const result = await generateDescription(input, async () => {
+      throw new Error("External request must never happen without a key.");
+    });
+    assert.equal(result.model, "local-template-v1");
+    assert.equal(result.source, "template");
+    assert.match(result.draft, /Modern Toronto Condo/);
+    assert.match(result.draft, /2 bedrooms/);
+    assert.match(result.draft, /Balcony, Indoor parking/);
+    assert.match(result.draft, /\\$650,000/);
+    assert.doesNotMatch(result.draft, /nearby schools|safe neighborhood|guaranteed returns/i);
   } finally {
     if (old !== undefined) process.env.GEMINI_API_KEY = old;
   }
