@@ -53,6 +53,9 @@ export const updateProperty = async (
   res: Response
 ) => {
   const id = Number(req.params.id);
+  if (!Number.isSafeInteger(id) || id < 1) {
+    return res.status(400).json({ success: false, message: "Invalid property ID" });
+  }
 
   const updatedProperty = await updatePropertyService(id, req.body, req.authUser!);
 
@@ -73,8 +76,11 @@ export const deleteProperty = async (
   res: Response
 ) => {
   const id = Number(req.params.id);
+  if (!Number.isSafeInteger(id) || id < 1) {
+    return res.status(400).json({ success: false, message: "Invalid property ID" });
+  }
 
-  const deleted = await  deletePropertyService(id);
+  const deleted = await deletePropertyService(id, req.authUser!);
 
   if (!deleted) {
     return res.status(404).json({
