@@ -18,7 +18,7 @@ export const createPropertySchema = z.object({
 
   listingType: z.enum(["sale", "rent"]),
 
-  price: z.number().positive("Price must be greater than 0"),
+  price: z.number().int().positive("Price must be greater than 0").max(2147483647),
 
   bedrooms: z.number().int().min(0),
 
