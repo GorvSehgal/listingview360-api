@@ -105,7 +105,23 @@ test("realtors manage only their own property; admin controls legacy listings", 
     assert.equal(owner?.ownerId, userA.id);
 
     const publicRead = await send("GET", `/properties/${propertyId}`);
-    assert.equal(publicRead.status, 200);
+    assert.equal(publicRead.status, 404, "New listings must be private until approved");
+    const publicList = await send("GET", "/properties");
+    assert.equal(publicList.status, 200);
+    assert.equal(await (await fetch(base + "/properties")).text().then(s => s.includes('"id":' + propertyId + ',')), false);
+
+    const otherRealtorList = await send("GET", "/properties/manage", undefined, tokenB);
+    assert.equal(otherRealtorList.status, 200);
+    assert.equal(JSON.stringify(otherRealtorList.body).includes('"id":' + propertyId + ','), false);
+    const ownListingQueue = await send("GET", "/properties/manage", undefined, tokenA);
+    assert.equal(ownListingQueue.status, 200);
+    assert.equal(JSON.stringify(ownListingQueue.body).includes('"status":"pending"'), true);
+
+    const realtorApprovalAttempt = await send("PATCH", `/properties/${propertyId}/review`, { status: "approved" }, tokenA);
+    assert.equal(realtorApprovalAttempt.status, 403);
+    const adminApproval = await send("PATCH", `/properties/${propertyId}/review`, { status: "approved" }, tokenAdmin);
+    assert.equal(adminApproval.status, 200);
+    assert.equal((await send("GET", `/properties/${propertyId}`)).status, 200);
 
     const badPrice = await send("PATCH", `/properties/${propertyId}`, { price: 1.5 }, tokenA);
     assert.equal(badPrice.status, 400);
@@ -122,6 +138,13 @@ test("realtors manage only their own property; admin controls legacy listings", 
       price: 560000,
     }, tokenA);
     assert.equal(ownEdit.status, 200);
+    assert.equal((await send("GET", `/properties/${propertyId}`)).status, 404, "Edits must reset review");
+    const adminReapproval = await send("PATCH", `/properties/${propertyId}/review`, { status: "approved" }, tokenAdmin);
+    assert.equal(adminReapproval.status, 200);
+    assert.equal((await send("GET", `/properties/${propertyId}`)).status, 200);
+    const adminUnpublish = await send("PATCH", `/properties/${propertyId}/review`, { status: "rejected" }, tokenAdmin);
+    assert.equal(adminUnpublish.status, 200);
+    assert.equal((await send("GET", `/properties/${propertyId}`)).status, 404);
 
     const legacy = await prisma.property.create({ data: {
       ...listing,
