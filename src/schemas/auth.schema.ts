@@ -22,3 +22,10 @@ export const signupSchema = z.object({
 export const reviewRealtorSchema = z.object({
   status: z.enum(["approved", "rejected"]),
 }).strict();
+
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1).max(128),
+  newPassword: z.string().min(12).max(128).refine(value => Buffer.byteLength(value,"utf8") <= 128, {
+    message:"Password is too long",
+  }),
+}).strict();
