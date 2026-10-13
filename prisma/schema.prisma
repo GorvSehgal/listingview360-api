@@ -7,6 +7,12 @@ datasource db {
   provider = "postgresql"
 }
 
+enum ViewingRequestStatus {
+  new
+  contacted
+  closed
+}
+
 enum ListingType {
   sale
   rent
@@ -76,6 +82,9 @@ model Property {
   ownerId Int?
   owner   User? @relation(fields: [ownerId], references: [id], onDelete: SetNull)
 
+  viewingRequests ViewingRequest[]
+  metrics PropertyMetrics?
+
   images    PropertyImage[]
   panoramas Panorama[]
 
@@ -103,4 +112,28 @@ model Panorama {
 
   propertyId Int
   property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+}
+
+model ViewingRequest {
+  id Int @id @default(autoincrement())
+  propertyId Int
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  name String
+  email String
+  phone String
+  preferredDate DateTime
+  message String?
+  status ViewingRequestStatus @default(new)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([propertyId, createdAt])
+  @@index([status])
+}
+
+model PropertyMetrics {
+  propertyId Int @id
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  views Int @default(0)
+  tourStarts Int @default(0)
+  updatedAt DateTime @updatedAt
 }

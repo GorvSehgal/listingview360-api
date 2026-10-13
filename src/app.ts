@@ -8,6 +8,8 @@ import propertyRouter from "./routes/property.routes.js";
 import authRouter from "./routes/auth.routes.js";
 import aiRouter from "./routes/ai.routes.js";
 import imageUploadRouter from "./routes/upload.routes.js";
+import { publicLeadRouter, managementLeadRouter } from "./routes/lead.routes.js";
+import { publicMetricsRouter, managementMetricsRouter } from "./routes/metrics.routes.js";
 
 const app = express();
 app.disable("x-powered-by");
@@ -36,7 +38,11 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use("/api/v1/health", healthRouter);
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/ai", aiRouter);
+app.use("/api/v1/properties", publicLeadRouter);
+app.use("/api/v1/properties", publicMetricsRouter);
 app.use("/api/v1/properties", propertyRouter);
+app.use("/api/v1/viewing-requests", managementLeadRouter);
+app.use("/api/v1/listing-insights", managementMetricsRouter);
 
 // Do not return internals, SQL errors, or stack traces to API consumers.
 const errorHandler: ErrorRequestHandler = (error, req, res, next) => {
