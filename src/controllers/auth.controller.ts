@@ -108,3 +108,21 @@ export async function reviewRealtor(
   res.setHeader("Cache-Control", "no-store");
   res.status(200).json({ success: true, data: { id, approvalStatus: req.body.status } });
 }
+
+export async function changePassword(req: Request, res: Response) {
+  const actor = req.authUser!;
+  const body = req.body as { currentPassword: string; newPassword: string };
+  const user = await prisma.user.findUnique({
+    where: { id: actor.id }, select: { passwordHash: true },
+  });
+  if (!user || !(await verifyPassword(body.currentPassword, user.passwordHash))) {
+    res.status(401).json({ success: false, message: "Current password is incorrect" }); return;
+  }
+  if (body.currentPassword === body.newPassword) {
+    res.status(400).json({ success: false, message: "Choose a different password" }); return;
+  }
+  const passwordHash = await hashPassword(body.newPassword);
+  await prisma.user.update({ where: { id: actor.id }, data: { passwordHash } });
+  res.setHeader("Cache-Control","no-store");
+  res.json({ success: true, data: { message: "Password changed. Use the new password next time you sign in." } });
+}
