@@ -17,6 +17,12 @@ enum UserRole {
   realtor
 }
 
+enum RealtorApprovalStatus {
+  pending
+  approved
+  rejected
+}
+
 enum ListingStatus {
   pending
   approved
@@ -29,7 +35,13 @@ model User {
   passwordHash String
   role         UserRole @default(realtor)
   active       Boolean  @default(true)
+  approvalStatus RealtorApprovalStatus @default(approved)
+  fullName     String?
+  brokerage    String?
+  licenseNumber String?
   properties   Property[]
+
+  @@index([role, approvalStatus])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

@@ -19,3 +19,10 @@
 - Provision the admin through protected runtime environment, not public registration.
 - The migration intentionally makes all legacy records pending. Review them explicitly; seeded demos are not actual for-sale properties.
 - Use monitoring, backups, upload quotas/rate limiting, CSRF/XSS review, distributed throttles and malware/image transcoding in production. The minimal file-signature validation is not a full media security pipeline.
+
+
+## Public realtor self-registration
+- `POST /api/v1/auth/signup` accepts fullName, email, password (>=12 characters), optional brokerage and licenseNumber. Additional fields, including `role` or `active`, are rejected.
+- Every public registration creates an **inactive**, **pending**, **realtor-only** account. No JWT is issued; a pending or rejected realtor cannot sign in, upload photos, or submit listings.
+- Admin reviews applications at `GET /api/v1/auth/realtors/pending` and approves or rejects via `PATCH /api/v1/auth/realtors/:id/review`. Admin must independently verify licensing/identity before approving.
+- The single-instance signup rate limiter is a safety net, not a distributed abuse control. Before public production launch, add email verification, anti-bot protections, rate limiting at edge, audit logging, and a tested admin bootstrap flow.
