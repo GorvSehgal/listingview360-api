@@ -181,3 +181,72 @@ test("realtors manage only their own property; admin controls legacy listings", 
     }
   }
 });
+
+
+test("public realtor signup remains inactive until an admin approves it", {
+  skip: process.env.RUN_DB_TESTS !== "true",
+}, async () => {
+  const { default: app } = await import("../app.js");
+  const { prisma } = await import("../config/database.js");
+  const server = app.listen(0);
+  await new Promise<void>((resolve) => server.once("listening", resolve));
+  const address = server.address();
+  assert.ok(address && typeof address !== "string");
+  const base = `http://127.0.0.1:${address.port}/api/v1`;
+  const emails = ["ci-signup-pending@listingview360.example", "ci-signup-rejected@listingview360.example", "ci-signup-admin@listingview360.example"];
+  const password = "secure-self-signup-2026";
+  async function call(method: string, endpoint: string, body?: unknown, token?: string) {
+    const response = await fetch(base + endpoint, {
+      method,
+      headers: {
+        ...(body ? { "Content-Type": "application/json" } : {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      ...(body ? { body: JSON.stringify(body) } : {}),
+    });
+    return { status: response.status, body: await response.json() as ApiResponse };
+  }
+  try {
+    await prisma.user.deleteMany({ where: { email: { in: emails } } });
+    const admin = await prisma.user.create({
+      data: { email: emails[2]!, passwordHash: await hashPassword(password), role: "admin" },
+    });
+    assert.ok(admin.id);
+    const registration = {
+      email: emails[0]!, fullName: "Sample Realtor", brokerage: "Example Brokerage",
+      licenseNumber: "TEST-NO-REAL-LICENSE", password,
+    };
+    assert.equal((await call("POST", "/auth/signup", { ...registration, role: "admin" })).status, 400);
+    assert.equal((await call("POST", "/auth/signup", { ...registration, password: "short" })).status, 400);
+    assert.equal((await call("POST", "/auth/signup", registration)).status, 201);
+    const pending = await prisma.user.findUnique({ where: { email: registration.email } });
+    assert.equal(pending?.role, "realtor");
+    assert.equal(pending?.active, false);
+    assert.equal(pending?.approvalStatus, "pending");
+    assert.equal(pending?.fullName, registration.fullName);
+    assert.equal((await call("POST", "/auth/signup", registration)).status, 409);
+    assert.equal((await call("POST", "/auth/login", { email: registration.email, password })).status, 403);
+    assert.equal((await call("GET", "/auth/realtors/pending")).status, 401);
+    const loginAdmin = await call("POST", "/auth/login", { email: admin.email, password });
+    assert.equal(loginAdmin.status, 200);
+    const tokenAdmin = loginAdmin.body.data?.accessToken;
+    assert.ok(tokenAdmin);
+    const queue = await call("GET", "/auth/realtors/pending", undefined, tokenAdmin);
+    assert.equal(queue.status, 200);
+    assert.ok(JSON.stringify(queue.body).includes(registration.email));
+    assert.equal((await call("PATCH", `/auth/realtors/${pending?.id}/review`, { status: "approved" })).status, 401);
+    assert.equal((await call("PATCH", `/auth/realtors/${pending?.id}/review`, { status: "approved" }, tokenAdmin)).status, 200);
+    assert.equal((await call("POST", "/auth/login", { email: registration.email, password })).status, 200);
+    assert.equal((await call("POST", "/auth/signup", { ...registration, email: emails[1] })).status, 201);
+    const rejected = await prisma.user.findUnique({ where: { email: emails[1] } });
+    assert.equal((await call("PATCH", `/auth/realtors/${rejected?.id}/review`, { status: "rejected" }, tokenAdmin)).status, 200);
+    assert.equal((await call("POST", "/auth/login", { email: emails[1], password })).status, 403);
+    assert.equal((await prisma.user.findUnique({ where: { email: emails[1] } }))?.active, false);
+  } finally {
+    try { await prisma.user.deleteMany({ where: { email: { in: emails } } }); }
+    finally {
+      await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+      await prisma.$disconnect();
+    }
+  }
+});
