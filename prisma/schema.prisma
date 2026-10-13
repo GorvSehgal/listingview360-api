@@ -17,6 +17,12 @@ enum UserRole {
   realtor
 }
 
+enum ListingStatus {
+  pending
+  approved
+  rejected
+}
+
 model User {
   id           Int      @id @default(autoincrement())
   email        String   @unique
@@ -50,6 +56,10 @@ model Property {
   realtorName      String
   realtorBrokerage String?
 
+  status       ListingStatus @default(pending)
+  reviewedAt   DateTime?
+  reviewedById Int?
+
   // Legacy demo listings have no owner; only admins may update/delete them.
   ownerId Int?
   owner   User? @relation(fields: [ownerId], references: [id], onDelete: SetNull)
@@ -61,6 +71,7 @@ model Property {
   updatedAt DateTime @updatedAt
 
   @@index([ownerId])
+  @@index([status])
 }
 
 model PropertyImage {

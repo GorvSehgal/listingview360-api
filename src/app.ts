@@ -7,6 +7,7 @@ import { swaggerSpec } from "./swagger/swagger.js";
 import propertyRouter from "./routes/property.routes.js";
 import authRouter from "./routes/auth.routes.js";
 import aiRouter from "./routes/ai.routes.js";
+import imageUploadRouter from "./routes/upload.routes.js";
 
 const app = express();
 app.disable("x-powered-by");
@@ -28,6 +29,8 @@ app.use((req, res, next) => {
   res.setHeader("Referrer-Policy", "no-referrer");
   next();
 });
+// Image upload has its own protected 8 MB request limit; all other JSON stays at 256 KB.
+app.use("/api/v1/uploads", imageUploadRouter);
 app.use(express.json({ limit: "256kb" }));
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use("/api/v1/health", healthRouter);
