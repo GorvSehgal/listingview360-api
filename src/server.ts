@@ -19,7 +19,7 @@ async function bootstrapAccounts() {
   for (const account of configured) {
     if (!account.email && !account.password) continue;
     const email = account.email?.trim().toLowerCase();
-    if (!email || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email) || email.length > 254 || !account.password) {
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254 || !account.password) {
       throw new Error(`Invalid bootstrap ${account.role} configuration`);
     }
     const existing = await prisma.user.findUnique({ where: { email }, select: { id: true } });
