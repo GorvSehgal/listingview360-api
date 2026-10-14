@@ -7,6 +7,8 @@ export type Property = {
   postalCode: string;
 
   listingType: "sale" | "rent";
+  status: "pending" | "approved" | "rejected";
+  ownerId?: number;
 
   price: number;
 
@@ -26,5 +28,5 @@ export type Property = {
     url: string;
   }[];
 };
-export type CreatePropertyInput = Omit<Property, "id">;
+export type CreatePropertyInput = Omit<Property, "id" | "status" | "ownerId">;
 export type UpdatePropertyInput = Partial<CreatePropertyInput>;
