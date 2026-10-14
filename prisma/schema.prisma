@@ -137,3 +137,42 @@ model PropertyMetrics {
   tourStarts Int @default(0)
   updatedAt DateTime @updatedAt
 }
+
+enum BlogStatus {
+  draft
+  approved
+  rejected
+  published
+}
+
+model BlogPost {
+  id               Int        @id @default(autoincrement())
+  slug             String     @unique
+  title            String
+  excerpt          String
+  category         String
+  body             String     @db.Text
+  status           BlogStatus @default(draft)
+  revision         Int        @default(1)
+  approvedRevision Int?
+  createdById      Int
+  approvedById     Int?
+  publishedAt      DateTime?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+  audit            BlogAudit[]
+
+  @@index([status, publishedAt])
+}
+
+model BlogAudit {
+  id         Int      @id @default(autoincrement())
+  blogPostId Int
+  blogPost   BlogPost @relation(fields: [blogPostId], references: [id], onDelete: Cascade)
+  actorId    Int
+  action     String
+  revision   Int
+  createdAt  DateTime @default(now())
+
+  @@index([blogPostId, createdAt])
+}
