@@ -5,6 +5,7 @@ import healthRouter from "./routes/health.routes.js";
 import swaggerUi from "swagger-ui-express";
 import { swaggerSpec } from "./swagger/swagger.js";
 import propertyRouter from "./routes/property.routes.js";
+import blogRouter from "./routes/blog.routes.js";
 import authRouter from "./routes/auth.routes.js";
 import aiRouter from "./routes/ai.routes.js";
 import imageUploadRouter from "./routes/upload.routes.js";
@@ -41,6 +42,7 @@ app.use("/api/v1/ai", aiRouter);
 app.use("/api/v1/properties", publicLeadRouter);
 app.use("/api/v1/properties", publicMetricsRouter);
 app.use("/api/v1/properties", propertyRouter);
+app.use("/api/v1/blog", blogRouter);
 app.use("/api/v1/viewing-requests", managementLeadRouter);
 app.use("/api/v1/listing-insights", managementMetricsRouter);
 
