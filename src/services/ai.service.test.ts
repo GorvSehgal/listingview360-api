@@ -5,6 +5,8 @@ import { generateDescription, AiDraftError } from "./ai.service.js";
 const input = {
   title: "Modern Toronto Condo",
   propertyType: "Condo",
+  address: "123 King St W",
+  notes: "North-facing living room",
   city: "Toronto",
   province: "ON",
   bedrooms: 2,
@@ -50,6 +52,8 @@ test("without Gemini key, creates a factual local template and never calls a pro
     assert.equal(result.model, "local-template-v1");
     assert.equal(result.source, "template");
     assert.match(result.draft, /Modern Toronto Condo/);
+    assert.match(result.draft, /123 King St W/);
+    assert.match(result.draft, /North-facing living room/);
     assert.match(result.draft, /2 bedrooms/);
     assert.match(result.draft, /Balcony, Indoor parking/);
     assert.ok(result.draft.includes("$650,000"));
@@ -70,5 +74,22 @@ test("provider failures are translated into safe API errors", async () => {
   } finally {
     if (old === undefined) delete process.env.GEMINI_API_KEY;
     else process.env.GEMINI_API_KEY = old;
+  }
+});
+
+
+test("investor and family-friendly tones retain only provided facts in template mode", async () => {
+  const old = process.env.GEMINI_API_KEY;
+  delete process.env.GEMINI_API_KEY;
+  try {
+    for (const tone of ["investor", "family-friendly"] as const) {
+      const result = await generateDescription({ ...input, tone });
+      assert.equal(result.source, "template");
+      assert.match(result.draft, /123 King St W/);
+      assert.match(result.draft, /North-facing living room/);
+      assert.doesNotMatch(result.draft, /guaranteed returns|ideal for families/i);
+    }
+  } finally {
+    if (old !== undefined) process.env.GEMINI_API_KEY = old;
   }
 });
