@@ -6,7 +6,7 @@ export class AiDraftError extends Error {
   }
 }
 
-const defaultModel = "gemini-3-flash";
+const defaultModel = "gemini-3.1-flash-lite";
 const maxDraftChars = 2400;
 
 type DraftResult = { draft: string; model: string; source: "template" | "ai" };
