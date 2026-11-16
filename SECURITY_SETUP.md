@@ -55,3 +55,26 @@ curl -X GET http://localhost:3000/api/v1/auth/me -H "Authorization: Bearer $TOKE
 - Admins should verify realtor identities and rights to publish real listings. User-provided names and photos are not yet verified.
 - The current seed script **deletes and recreates all properties**; never run `npm run seed` against production data.
 - Build, database migration, and integration tests require a configured development environment. Tests in this PR cover the crypto primitives; authorization should additionally be tested with an isolated PostgreSQL database.
+
+## AI-assisted listing description drafts (optional)
+
+Supply `GEMINI_API_KEY` only to the backend and, if needed, choose a permitted model via `GEMINI_MODEL`. Model availability and billing depend on your Google account. The key is **never sent to clients**.
+
+`POST /api/v1/ai/listing-description` requires a valid admin/realtor bearer token. Example JSON:
+
+```json
+{
+  "title": "Bright Toronto Condo",
+  "propertyType": "Condo",
+  "city": "Toronto",
+  "province": "ON",
+  "bedrooms": 2,
+  "bathrooms": 2,
+  "features": ["Balcony", "Parking"],
+  "tone": "professional"
+}
+```
+
+Returns a text draft and `needsReview: true`. No database writes occur. Review and verify every claim before publishing. This is a human-assistance feature, not a verified source of property facts.
+
+An in-process per-account throttle limits API costs in a single instance. For scaled deployments enforce a distributed per-account usage budget and monitor token usage; the external Gemini API is a paid third-party dependency.

@@ -35,10 +35,12 @@ export const createPropertySchema = z.object({
   realtorBrokerage: z.string().optional(),
 
   images: z
-    .array(z.string().url("Image URL must be valid"))
-    .min(1, "At least one image is required"),
+    .array(z.string().url("Image URL must be valid").refine((url) => url.startsWith("https://"), "Images must use HTTPS"))
+    .min(1, "At least one image is required")
+    .max(15, "A listing supports at most 15 images"),
 
   panoramas: z.array(panoramaSchema),
 });
 
 export const updatePropertySchema = createPropertySchema.partial();
+export const reviewPropertySchema = z.object({ status: z.enum(["approved", "rejected"]) });

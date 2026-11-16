@@ -5,7 +5,12 @@ import healthRouter from "./routes/health.routes.js";
 import swaggerUi from "swagger-ui-express";
 import { swaggerSpec } from "./swagger/swagger.js";
 import propertyRouter from "./routes/property.routes.js";
+import blogRouter from "./routes/blog.routes.js";
 import authRouter from "./routes/auth.routes.js";
+import aiRouter from "./routes/ai.routes.js";
+import imageUploadRouter from "./routes/upload.routes.js";
+import { publicLeadRouter, managementLeadRouter } from "./routes/lead.routes.js";
+import { publicMetricsRouter, managementMetricsRouter } from "./routes/metrics.routes.js";
 
 const app = express();
 app.disable("x-powered-by");
@@ -27,11 +32,19 @@ app.use((req, res, next) => {
   res.setHeader("Referrer-Policy", "no-referrer");
   next();
 });
+// Image upload has its own protected 8 MB request limit; all other JSON stays at 256 KB.
+app.use("/api/v1/uploads", imageUploadRouter);
 app.use(express.json({ limit: "256kb" }));
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use("/api/v1/health", healthRouter);
 app.use("/api/v1/auth", authRouter);
+app.use("/api/v1/ai", aiRouter);
+app.use("/api/v1/properties", publicLeadRouter);
+app.use("/api/v1/properties", publicMetricsRouter);
 app.use("/api/v1/properties", propertyRouter);
+app.use("/api/v1/blog", blogRouter);
+app.use("/api/v1/viewing-requests", managementLeadRouter);
+app.use("/api/v1/listing-insights", managementMetricsRouter);
 
 // Do not return internals, SQL errors, or stack traces to API consumers.
 const errorHandler: ErrorRequestHandler = (error, req, res, next) => {

@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import { getProperties, getPropertyById ,createProperty as createPropertyService,updateProperty as updatePropertyService, deleteProperty as deletePropertyService,} from "../services/properties.service.js";
+import { getProperties, getPropertyById, getManagedProperties, reviewProperty as reviewPropertyService, createProperty as createPropertyService, updateProperty as updatePropertyService, deleteProperty as deletePropertyService } from "../services/properties.service.js";
 import { CreatePropertyInput,UpdatePropertyInput } from "../types/property.js";
 
 export const getAllProperties = async (
@@ -93,4 +93,18 @@ export const deleteProperty = async (
     success: true,
     message: "Property deleted successfully",
   });
+};
+export const getManagementProperties = async (req: Request, res: Response) => {
+  const items = await getManagedProperties(req.authUser!);
+  res.status(200).json({ success: true, count: items.length, data: items });
+};
+
+export const reviewProperty = async (req: Request<{ id: string }, {}, { status: "approved" | "rejected" }>, res: Response) => {
+  const id = Number(req.params.id);
+  if (!Number.isSafeInteger(id) || id < 1) {
+    return res.status(400).json({ success: false, message: "Invalid property ID" });
+  }
+  const item = await reviewPropertyService(id, req.body.status, req.authUser!);
+  if (!item) return res.status(404).json({ success: false, message: "Property not found" });
+  return res.status(200).json({ success: true, data: item });
 };

@@ -1,7 +1,7 @@
 import { requireAuth, requireRole } from "../middleware/auth.middleware.js";
 import { Router } from "express";
-import { getAllProperties ,getProperty, createProperty, updateProperty,deleteProperty} from "../controllers/property.controller.js";
-import { createPropertySchema, updatePropertySchema } from "../schemas/property.schema.js";
+import { getAllProperties, getProperty, getManagementProperties, reviewProperty, createProperty, updateProperty, deleteProperty } from "../controllers/property.controller.js";
+import { createPropertySchema, updatePropertySchema, reviewPropertySchema } from "../schemas/property.schema.js";
 import { validateBody } from "../middleware/validate.middleware.js";
 /**
  * @openapi
@@ -25,6 +25,7 @@ const router = Router();
 
 
 router.get("/", getAllProperties);
+router.get("/manage", requireAuth, requireRole("admin", "realtor"), getManagementProperties);
 /**
  * @openapi
  * /properties/{id}:
@@ -144,6 +145,7 @@ router.post("/", requireAuth, requireRole("admin", "realtor"), validateBody(crea
  *         description: Property not found
  */
 router.patch("/:id", requireAuth, requireRole("admin", "realtor"), validateBody(updatePropertySchema), updateProperty);
+router.patch("/:id/review", requireAuth, requireRole("admin"), validateBody(reviewPropertySchema), reviewProperty);
 /**
  * @openapi
  * /properties/{id}:

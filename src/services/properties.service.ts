@@ -7,6 +7,7 @@ const permittedPropertyWhere = (id: number, actor: PropertyActor) =>
 
 export const getProperties = async (): Promise<Property[]> => {
   const dbProperties = await prisma.property.findMany({
+    where: { status: "approved" },
     include: {
       images: true,
       panoramas: true,
@@ -15,6 +16,8 @@ export const getProperties = async (): Promise<Property[]> => {
 
   return dbProperties.map((property) => ({
     id: property.id,
+    status: property.status,
+    ownerId: property.ownerId ?? undefined,
     title: property.title,
     address: property.address,
     city: property.city,
@@ -41,9 +44,9 @@ export const getProperties = async (): Promise<Property[]> => {
 export const getPropertyById = async (
   id: number
 ): Promise<Property | undefined> => {
-  const property = await prisma.property.findUnique({
+  const property = await prisma.property.findFirst({
     where: {
-      id,
+      id, status: "approved",
     },
     include: {
       images: true,
@@ -57,6 +60,8 @@ export const getPropertyById = async (
 
   return {
     id: property.id,
+    status: property.status,
+    ownerId: property.ownerId ?? undefined,
     title: property.title,
     address: property.address,
     city: property.city,
@@ -126,6 +131,8 @@ export const createProperty = async (
 
   return {
     id: createdProperty.id,
+    status: createdProperty.status,
+    ownerId: createdProperty.ownerId ?? undefined,
     title: createdProperty.title,
     address: createdProperty.address,
     city: createdProperty.city,
@@ -164,6 +171,9 @@ export const updateProperty = async (
     where: permittedPropertyWhere(id, actor),
 
     data: {
+      status: "pending",
+      reviewedAt: null,
+      reviewedById: null,
       title: data.title,
       address: data.address,
       city: data.city,
@@ -209,6 +219,8 @@ export const updateProperty = async (
 
   return {
     id: updatedProperty.id,
+    status: updatedProperty.status,
+    ownerId: updatedProperty.ownerId ?? undefined,
     title: updatedProperty.title,
     address: updatedProperty.address,
     city: updatedProperty.city,
@@ -248,4 +260,46 @@ export const deleteProperty = async (
   });
 
   return true;
+};
+/** All reviewable listings for admins; only one's own listings for realtors. */
+export const getManagedProperties = async (actor: PropertyActor): Promise<Property[]> => {
+  const records = await prisma.property.findMany({
+    where: actor.role === "admin" ? {} : { ownerId: actor.id },
+    orderBy: { createdAt: "desc" },
+    include: { images: { orderBy: { sortOrder: "asc" } }, panoramas: { orderBy: { sortOrder: "asc" } } },
+  });
+  return records.map((item) => ({
+    id: item.id, status: item.status, ownerId: item.ownerId ?? undefined,
+    title: item.title, address: item.address, city: item.city, province: item.province,
+    postalCode: item.postalCode, listingType: item.listingType, price: item.price,
+    bedrooms: item.bedrooms, bathrooms: item.bathrooms, propertyType: item.propertyType,
+    yearBuilt: item.yearBuilt ?? undefined, description: item.description,
+    realtorName: item.realtorName, realtorBrokerage: item.realtorBrokerage ?? undefined,
+    images: item.images.map((image) => image.url),
+    panoramas: item.panoramas.map((panorama) => ({ name: panorama.name, url: panorama.url })),
+  }));
+};
+
+/** Server-enforced publication gate; realtors have no approval permission. */
+export const reviewProperty = async (
+  id: number, status: "approved" | "rejected", actor: PropertyActor,
+): Promise<Property | undefined> => {
+  if (actor.role !== "admin") return undefined;
+  const record = await prisma.property.findUnique({ where: { id }, select: { id: true } });
+  if (!record) return undefined;
+  const item = await prisma.property.update({
+    where: { id },
+    data: { status, reviewedAt: new Date(), reviewedById: actor.id },
+    include: { images: { orderBy: { sortOrder: "asc" } }, panoramas: { orderBy: { sortOrder: "asc" } } },
+  });
+  return {
+    id: item.id, status: item.status, ownerId: item.ownerId ?? undefined,
+    title: item.title, address: item.address, city: item.city, province: item.province,
+    postalCode: item.postalCode, listingType: item.listingType, price: item.price,
+    bedrooms: item.bedrooms, bathrooms: item.bathrooms, propertyType: item.propertyType,
+    yearBuilt: item.yearBuilt ?? undefined, description: item.description,
+    realtorName: item.realtorName, realtorBrokerage: item.realtorBrokerage ?? undefined,
+    images: item.images.map((image) => image.url),
+    panoramas: item.panoramas.map((panorama) => ({ name: panorama.name, url: panorama.url })),
+  };
 };
