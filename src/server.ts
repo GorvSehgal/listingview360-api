@@ -3,6 +3,7 @@ import app from "./app.js";
 import { seedDemoProperties } from "./scripts/seed-demo.js";
 import { prisma } from "./config/database.js";
 import { hashPassword, issueAccessToken } from "./services/auth.service.js";
+import { generateDescription } from "./services/ai.service.js";
 
 dotenv.config();
 
@@ -45,6 +46,26 @@ async function bootstrapAccounts() {
 
 async function start() {
   await bootstrapAccounts();
+  const aiConfigured = Boolean(process.env.GEMINI_API_KEY?.trim());
+  console.info("Listing AI provider:", aiConfigured ? "configured" : "not configured (template fallback)");
+  if (process.env.AI_PROVIDER_SELF_TEST === "true") {
+    try {
+      const result = await generateDescription({
+        title: "Sample Toronto Condo",
+        propertyType: "Condo",
+        address: "123 Test Avenue",
+        city: "Toronto",
+        province: "ON",
+        bedrooms: 2,
+        bathrooms: 2,
+        features: ["Balcony", "Underground parking"],
+        tone: "professional",
+      });
+      console.info("Listing AI startup self-test:", result.source, result.model);
+    } catch (error: unknown) {
+      console.error("Listing AI startup self-test failed:", error instanceof Error ? error.message : "unknown error");
+    }
+  }
   // Explicit staging-only opt-in. Never clears existing records.
   if (process.env.SEED_DEMO_PROPERTIES === "true") {
     const result = await seedDemoProperties();
